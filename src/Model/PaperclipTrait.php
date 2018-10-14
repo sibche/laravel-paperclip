@@ -8,6 +8,7 @@ use Czim\Paperclip\Contracts\AttachmentFactoryInterface;
 use Czim\Paperclip\Contracts\AttachmentInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 
 trait PaperclipTrait
 {
@@ -86,56 +87,6 @@ trait PaperclipTrait
                 $attachedFile->afterDelete($model);
             }
         });
-    }
-
-    /**
-     * Handle the dynamic retrieval of attachment objects.
-     *
-     * @param string $key
-     *
-     * @return mixed
-     */
-    public function getAttribute($key)
-    {
-        if (array_key_exists($key, $this->attachedFiles)) {
-            return $this->attachedFiles[ $key ];
-        }
-
-        return parent::getAttribute($key);
-    }
-
-    /**
-     * Handles the setting of attachment objects.
-     *
-     * @param string $key
-     * @param mixed  $value
-     */
-    public function setAttribute($key, $value)
-    {
-        if (array_key_exists($key, $this->attachedFiles)) {
-
-            if ($value) {
-                $attachedFile = $this->attachedFiles[ $key ];
-
-                if ($value === Attachment::NULL_ATTACHMENT) {
-                    $attachedFile->setToBeDeleted();
-                    return;
-                }
-
-                /** @var StorableFileFactoryInterface $factory */
-                $factory = app(StorableFileFactoryInterface::class);
-
-                $attachedFile->setUploadedFile(
-                    $factory->makeFromAny($value)
-                );
-            }
-
-            $this->attachedUpdated = true;
-
-            return;
-        }
-
-        parent::setAttribute($key, $value);
     }
 
     /**
@@ -228,6 +179,84 @@ trait PaperclipTrait
             return  Arr::get($step, 'function') === 'performInsert'
                 &&  Arr::get($step, 'class') === Model::class;
         }, false);
+    }
+
+
+    /**
+     * Overridden to redirect getting of attachment values.
+     *
+     * {@inheritdoc}
+     */
+    public function __get($key)
+    {
+        if (array_key_exists($key, $this->attachedFiles)) {
+            return $this->getAttributeForAttachment($key);
+        }
+
+        return parent::__get($key);
+    }
+
+    /**
+     * Overridden to redirect setting of attachment values.
+     *
+     * {@inheritdoc}
+     */
+    public function __set($key, $value)
+    {
+        if (array_key_exists($key, $this->attachedFiles)) {
+            $this->setAttributeForAttachment($key, $value);
+            return;
+        }
+
+        parent::__set($key, $value);
+    }
+
+    /**
+     * @param string $key
+     * @return mixed
+     */
+    protected function getAttributeForAttachment($key)
+    {
+        if ( ! array_key_exists($key, $this->attachedFiles)) {
+            throw new InvalidArgumentException("No attachment for '{$key}'");
+        }
+
+        return $this->attachedFiles[ $key ];
+    }
+
+    /**
+     * @param string $key
+     * @param mixed  $value
+     */
+    protected function setAttributeForAttachment($key, $value)
+    {
+        if ($value) {
+            $attachedFile = $this->attachedFiles[ $key ];
+
+            if ($value === $this->nullAttachmentIdentifier()) {
+                $attachedFile->setToBeDeleted();
+                return;
+            }
+
+            /** @var StorableFileFactoryInterface $factory */
+            $factory = app(StorableFileFactoryInterface::class);
+
+            $attachedFile->setUploadedFile(
+                $factory->makeFromAny($value)
+            );
+        }
+
+        $this->attachedUpdated = true;
+
+        return;
+    }
+
+    /**
+     * Returns string value that, when set, should clear the attachment.
+     */
+    protected function nullAttachmentIdentifier()
+    {
+        return Attachment::NULL_ATTACHMENT;
     }
 
 }
