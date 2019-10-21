@@ -1,11 +1,11 @@
 {
-    "name": "czim/laravel-paperclip",
+    "name": "sibche/laravel-paperclip",
     "description": "Laravel Eloquent file attachment solution",
     "keywords": [ "file", "attachment", "laravel", "upload" ],
-    "homepage": "https://github.com/czim",
+    "homepage": "https://github.com/sibche",
     "require": {
         "php": ">=7.0.0",
-        "czim/file-handling": "^1.1",
+        "sibche/file-handling": "^1.2",
         "ext-json": "*"
     },
     "require-dev": {
