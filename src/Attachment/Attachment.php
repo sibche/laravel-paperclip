@@ -11,6 +11,7 @@ use Czim\FileHandling\Contracts\Storage\TargetInterface;
 use Czim\FileHandling\Handler\FileHandler;
 use Czim\Paperclip\Config\PaperclipConfig;
 use Czim\Paperclip\Config\Steps\ResizeStep;
+use Czim\Paperclip\Config\Steps\WatermarkStep;
 use Czim\Paperclip\Config\Variant;
 use Czim\Paperclip\Contracts\AttachableInterface;
 use Czim\Paperclip\Contracts\AttachmentInterface;
@@ -25,7 +26,6 @@ use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Serializable;
-use Sibche\Services\Paperclip\WatermarkStep;
 
 class Attachment implements AttachmentInterface, Serializable
 {
@@ -103,7 +103,7 @@ class Attachment implements AttachmentInterface, Serializable
     /**
      * @var ImgProxyService
      */
-    private ImgProxyService $imgProxyService;
+    private $imgProxyService;
 
 
     /**
