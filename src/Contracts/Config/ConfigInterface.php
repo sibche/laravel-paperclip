@@ -1,4 +1,5 @@
 <?php
+
 namespace Czim\Paperclip\Contracts\Config;
 
 use Illuminate\Contracts\Support\Arrayable;
@@ -79,6 +80,8 @@ interface ConfigInterface extends Arrayable
      */
     public function variantConfigs();
 
+    public function imgProxyVariant();
+
     /**
      * Returns the mimetype specifically configured for a given variant.
      *
@@ -150,5 +153,4 @@ interface ConfigInterface extends Arrayable
      * @return array
      */
     public function getOriginalConfig();
-
 }

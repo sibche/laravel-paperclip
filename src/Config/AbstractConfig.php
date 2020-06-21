@@ -1,4 +1,5 @@
 <?php
+
 namespace Czim\Paperclip\Config;
 
 use Czim\FileHandling\Handler\FileHandler;
@@ -141,6 +142,11 @@ abstract class AbstractConfig implements ConfigInterface
         return Arr::get($this->normalizedConfig, FileHandler::CONFIG_VARIANTS);
     }
 
+
+    public function imgProxyVariant()
+    {
+        return Arr::get($this->normalizedConfig, FileHandler::CONFIG_IMG_PROXY_VARIANTS);
+    }
     /**
      * Returns the mimetype specifically configured for a given variant.
      *
@@ -326,5 +332,4 @@ abstract class AbstractConfig implements ConfigInterface
     {
         return config('paperclip.default-variant', 'original');
     }
-
 }
