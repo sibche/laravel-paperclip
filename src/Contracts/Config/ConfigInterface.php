@@ -78,6 +78,8 @@ interface ConfigInterface extends Arrayable
      * @return array    associative, keyed by variant name
      */
     public function variantConfigs();
+    
+    public function imgProxyVariant();
 
     /**
      * Returns the mimetype specifically configured for a given variant.

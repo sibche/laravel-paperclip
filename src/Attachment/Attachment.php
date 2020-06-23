@@ -7,20 +7,28 @@ use Czim\FileHandling\Contracts\Handler\ProcessResultInterface;
 use Czim\FileHandling\Contracts\Storage\StorableFileFactoryInterface;
 use Czim\FileHandling\Contracts\Storage\StorableFileInterface;
 use Czim\FileHandling\Contracts\Storage\TargetInterface;
+use Czim\FileHandling\Handler\ProcessResult;
 use Czim\FileHandling\Handler\FileHandler;
 use Czim\Paperclip\Config\PaperclipConfig;
+use Czim\Paperclip\Config\Steps\ResizeStep;
+use Czim\Paperclip\Config\Steps\WatermarkStep;
+use Czim\Paperclip\Config\Variant;
 use Czim\Paperclip\Contracts\AttachableInterface;
 use Czim\Paperclip\Contracts\AttachmentInterface;
 use Czim\Paperclip\Contracts\Config\ConfigInterface;
 use Czim\Paperclip\Contracts\FileHandlerFactoryInterface;
 use Czim\Paperclip\Contracts\Path\InterpolatorInterface;
+use Czim\Paperclip\Events\AttachmentSavedEvent;
+use Czim\Paperclip\Events\ProcessingExceptionEvent;
 use Czim\Paperclip\Events\TemporaryFileFailedToBeDeletedEvent;
 use Czim\Paperclip\Exceptions\VariantProcessFailureException;
 use Czim\Paperclip\Path\InterpolatingTarget;
+use Czim\Paperclip\ImgProxy\ImgProxyService;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Serializable;
+
 
 class Attachment implements AttachmentInterface, Serializable
 {
@@ -96,10 +104,15 @@ class Attachment implements AttachmentInterface, Serializable
      */
     protected $deleteTarget;
 
+    /**
+     * @var ImgProxyService
+     */
+    private $imgProxyService;
 
     public function __construct()
     {
         $this->config = new PaperclipConfig([]);
+        $this->imgProxyService = app(ImgProxyService::class);
     }
 
 
@@ -375,6 +388,12 @@ class Attachment implements AttachmentInterface, Serializable
         }
 
         $target = $this->getOrMakeTargetInstance();
+
+        $imgProxyVariants = $this->config->imgProxyVariant();
+
+        if ($imgProxyVariants) {
+            return $this->getImgProxyUrl($imgProxyVariants, $target, $variant);
+        }
 
         return Arr::get(
             $this->handler->variantUrlsForTarget($target, [ $variant ]),
@@ -1150,4 +1169,84 @@ class Attachment implements AttachmentInterface, Serializable
         $this->setStorage($data['storage']);
     }
 
+    private function getImgProxyUrl($imgProxyVariants, $target, $variant)
+    {
+        $originalUrl = Arr::get(
+            $this->handler->variantUrlsForTarget($target),
+            FileHandler::ORIGINAL
+        );
+
+        if (!$variant)
+            return $originalUrl;
+
+        $firstVariant = $imgProxyVariants[array_key_first($imgProxyVariants)];
+
+        $imageWith = null;
+        $imageHeight = null;
+        $watermark = null;
+        if ($firstVariant instanceof Variant) {
+            $imageVariant = null;
+            foreach ($imgProxyVariants as $imgProxyVariant) {
+                if ($imgProxyVariant->getName() == $variant) {
+                    $imageVariant = $imgProxyVariant;
+                    break;
+                }
+            }
+
+            foreach ($imageVariant->getSteps() as $step) {
+                if ($step instanceof ResizeStep) {
+                    $imageWith = $step->getWidth();
+                    $imageHeight = $step->getHeight();
+                }
+                if ($step instanceof WatermarkStep) {
+                    $watermark = $step->toArray()['watermark'];
+                }
+            }
+        } else {
+            $imageVariant = null;
+            if (array_key_exists($variant, $imgProxyVariants)) {
+                $imageVariant = $imgProxyVariants[$variant];
+            } else {
+                throw new Exception("variant not found");
+            }
+            if (!array_key_exists("resize", $imageVariant))
+                throw new Exception("please add size");
+            $size = explode("x", $imageVariant["resize"]["dimensions"]);
+            $imageWith = $size[0];
+            $imageHeight = $size[1];
+        }
+
+        $imageUrl = $this->imgProxyService->setImageWith($imageWith)->setImageHeight($imageHeight)->setUrl($originalUrl);
+        if ($watermark) {
+            $waterMarkPosition = 'center';
+            if ($watermark['position']) {
+                $waterMarkPosition = $this->imgProxyWatermarkPositionMapper($watermark['position']);
+            }
+
+            $imageUrl->setWatermark($watermark["opacity"], $waterMarkPosition);
+        }
+
+        return $imageUrl->resize();
+    }
+
+    /**
+     * @param $position
+     * @return string
+     */
+    private function imgProxyWatermarkPositionMapper($position)
+    {
+        $positions = [
+            "center" => "ce",
+            "top" => "no",
+            "bottom" => "so",
+            "right" => "ea",
+            "left" => "we",
+            "top-right" => "noea",
+            "top-left" => "nowe",
+            "bottom-right" => "soea",
+            "bottom-left" => "sowe",
+        ];
+        return $positions[$position];
+
+    }
 }

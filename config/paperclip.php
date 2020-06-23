@@ -170,4 +170,10 @@ return [
         'chunk-size' => 500,
     ],
 
+    'imgproxy' => [
+        'key' => env('IMGPROXY_KEY'),
+        'salt' => env('IMGPROXY_SALT'),
+        'signature_size' => env('IMGPROXY_SIGNATURE_SIZE'),
+        'file_server_uri' => env('FILE_SERVER_URI'),
+    ]
 ];
