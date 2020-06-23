@@ -4,7 +4,7 @@
     "keywords": [ "file", "attachment", "laravel", "upload" ],
     "homepage": "https://github.com/sibche",
     "require": {
-        "php": ">=7.0.0",
+        "php": ">=7.4.0",
         "sibche/file-handling": "^1.2",
         "ext-json": "*"
     },
