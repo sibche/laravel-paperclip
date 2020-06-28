@@ -44,11 +44,13 @@ class PaperclipServiceProvider extends ServiceProvider
 
         $this->app->singleton(ImgProxyService::class, function () {
             if (
+            !(
                 config("paperclip.imgproxy.key") &&
                 config("paperclip.imgproxy.salt") &&
                 config("paperclip.imgproxy.signature_size") &&
                 config("paperclip.imgproxy.uri") &&
                 config("paperclip.imgproxy.file_server_uri")
+            )
             ) {
                 return null;
             }
