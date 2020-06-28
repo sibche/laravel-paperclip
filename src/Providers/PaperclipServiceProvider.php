@@ -55,90 +55,90 @@ class PaperclipServiceProvider extends ServiceProvider
             return new ImgProxyService(config("paperclip.imgproxy.key"), config("paperclip.imgproxy.salt"), config("paperclip.imgproxy.signature_size"), config("paperclip.imgproxy.uri"), config("paperclip.imgproxy.file_server_uri"));
         });
     }
-}
 
-/**
- * @return $this
- */
-protected
-function registerConfig()
-{
-    $this->mergeConfigFrom(
-        realpath(dirname(__DIR__) . '/../config/paperclip.php'),
-        'paperclip'
-    );
 
-    return $this;
-}
+    /**
+     * @return $this
+     */
+    protected
+    function registerConfig()
+    {
+        $this->mergeConfigFrom(
+            realpath(dirname(__DIR__) . '/../config/paperclip.php'),
+            'paperclip'
+        );
 
-/**
- * @return $this
- */
-protected
-function registerInterfaceBindings()
-{
-    $this->registerFileHandlerInterfaceBindings();
+        return $this;
+    }
 
-    $this->app->singleton(FileHandlerFactoryInterface::class, FileHandlerFactory::class);
-    $this->app->singleton(AttachmentFactoryInterface::class, AttachmentFactory::class);
+    /**
+     * @return $this
+     */
+    protected
+    function registerInterfaceBindings()
+    {
+        $this->registerFileHandlerInterfaceBindings();
 
-    $this->app->singleton(VariantStrategyFactoryInterface::class, function ($app) {
-        /** @var Application $app */
-        return (new VariantStrategyFactory(
-            new LaravelContainerDecorator($app)
-        ))->setConfig([
-            'aliases' => config('paperclip.variants.aliases', [])
+        $this->app->singleton(FileHandlerFactoryInterface::class, FileHandlerFactory::class);
+        $this->app->singleton(AttachmentFactoryInterface::class, AttachmentFactory::class);
+
+        $this->app->singleton(VariantStrategyFactoryInterface::class, function ($app) {
+            /** @var Application $app */
+            return (new VariantStrategyFactory(
+                new LaravelContainerDecorator($app)
+            ))->setConfig([
+                'aliases' => config('paperclip.variants.aliases', [])
+            ]);
+        });
+
+        // Image library
+        $this->app->singleton(ImagineInterface::class, config('paperclip.imagine', \Imagine\Gd\Imagine::class));
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    protected
+    function registerFileHandlerInterfaceBindings()
+    {
+        $this->app->singleton(VariantProcessorInterface::class, VariantProcessor::class);
+        $this->app->singleton(StorableFileFactoryInterface::class, StorableFileFactory::class);
+        $this->app->singleton(MimeTypeHelperInterface::class, MimeTypeHelper::class);
+        $this->app->singleton(ContentInterpreterInterface::class, UploadedContentInterpreter::class);
+        $this->app->singleton(UrlDownloaderInterface::class, UrlDownloader::class);
+        $this->app->singleton(InterpolatorInterface::class, Interpolator::class);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    protected
+    function bootConfig()
+    {
+        $this->publishes([
+            realpath(dirname(__DIR__) . '/../config/paperclip.php') => config_path('paperclip.php'),
         ]);
-    });
 
-    // Image library
-    $this->app->singleton(ImagineInterface::class, config('paperclip.imagine', \Imagine\Gd\Imagine::class));
+        return $this;
+    }
 
-    return $this;
-}
+    /**
+     * @return $this
+     */
+    protected
+    function registerCommands()
+    {
+        $this->app->singleton('paperclip.commands.refresh', RefreshAttachmentCommand::class);
 
-/**
- * @return $this
- */
-protected
-function registerFileHandlerInterfaceBindings()
-{
-    $this->app->singleton(VariantProcessorInterface::class, VariantProcessor::class);
-    $this->app->singleton(StorableFileFactoryInterface::class, StorableFileFactory::class);
-    $this->app->singleton(MimeTypeHelperInterface::class, MimeTypeHelper::class);
-    $this->app->singleton(ContentInterpreterInterface::class, UploadedContentInterpreter::class);
-    $this->app->singleton(UrlDownloaderInterface::class, UrlDownloader::class);
-    $this->app->singleton(InterpolatorInterface::class, Interpolator::class);
+        $this->commands([
+            'paperclip.commands.refresh',
+        ]);
 
-    return $this;
-}
-
-/**
- * @return $this
- */
-protected
-function bootConfig()
-{
-    $this->publishes([
-        realpath(dirname(__DIR__) . '/../config/paperclip.php') => config_path('paperclip.php'),
-    ]);
-
-    return $this;
-}
-
-/**
- * @return $this
- */
-protected
-function registerCommands()
-{
-    $this->app->singleton('paperclip.commands.refresh', RefreshAttachmentCommand::class);
-
-    $this->commands([
-        'paperclip.commands.refresh',
-    ]);
-
-    return $this;
-}
+        return $this;
+    }
 
 }
