@@ -105,17 +105,16 @@ class Attachment implements AttachmentInterface, Serializable
      */
     protected $deleteTarget;
 
-    /**
-     * @var ImgProxyService
-     */
-    private $imgProxyService;
 
     public function __construct()
     {
         $this->config = new PaperclipConfig([]);
-        $this->imgProxyService = app(ImgProxyService::class);
     }
 
+    private function getImgProxyService()
+    {
+        return app(ImgProxyService::class);
+    }
 
     /**
      * Sets the underlying instance object.
@@ -1172,7 +1171,8 @@ class Attachment implements AttachmentInterface, Serializable
 
     private function getImgProxyUrl($imgProxyVariants, $target, $variant)
     {
-        if (!$this->imgProxyService) {
+        $imgProxyService = $this->getImgProxyService();
+        if (!$imgProxyService) {
             throw new \Exception('you should provide image proxy configurations');
         }
 
@@ -1221,7 +1221,7 @@ class Attachment implements AttachmentInterface, Serializable
             $imageHeight = $size[1];
         }
 
-        $imageUrl = $this->imgProxyService->setImageWith($imageWith)->setImageHeight($imageHeight)->setUrl($originalUrl);
+        $imageUrl = $imgProxyService->setImageWith($imageWith)->setImageHeight($imageHeight)->setUrl($originalUrl);
         if ($watermark) {
             $waterMarkPosition = 'center';
             if ($watermark['position']) {
