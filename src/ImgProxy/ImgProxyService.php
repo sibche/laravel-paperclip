@@ -109,7 +109,8 @@ class ImgProxyService
         if (isset($this->watermark))
             $path .= $this->watermark;
 
-        $path .= "/{$encodedUrl}.{$this->getExtension($this->url)}";
+        $extension=strtolower($this->getExtension($this->url));
+        $path .= "/{$encodedUrl}.{$extension}";
 
         if (!$this->key || !$this->salt) {
             return $this->imgProxyUri . $path;
