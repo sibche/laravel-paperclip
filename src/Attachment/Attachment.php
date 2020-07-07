@@ -380,24 +380,26 @@ class Attachment implements AttachmentInterface, Serializable
      */
     public function url($variant = null)
     {
-        $variant = $variant ?: FileHandler::ORIGINAL;
+        $finalVariant = $variant ?: FileHandler::ORIGINAL;
 
         // If no attached file exists, we may return null or give a fallback URL.
         if (!$this->exists()) {
-            return $this->config->defaultVariantUrl($variant);
+            return $this->config->defaultVariantUrl($finalVariant);
         }
 
         $target = $this->getOrMakeTargetInstance();
 
         $imgProxyVariants = $this->config->imgProxyVariant();
 
-        if ($imgProxyVariants) {
-            return $this->getImgProxyUrl($imgProxyVariants, $target, $variant);
+        if ($imgProxyVariants && $variant) {
+            $output = $this->getImgProxyUrl($imgProxyVariants, $target, $finalVariant);
+            if ($output)
+                return $output;
         }
 
         return Arr::get(
-            $this->handler->variantUrlsForTarget($target, [$variant]),
-            $variant
+            $this->handler->variantUrlsForTarget($target, [$finalVariant]),
+            $finalVariant
         );
     }
 
@@ -1196,6 +1198,10 @@ class Attachment implements AttachmentInterface, Serializable
                     $imageVariant = $imgProxyVariant;
                     break;
                 }
+            }
+
+            if (!$imageVariant) {
+                throw new \Exception('this image variant not configurated : ' . $variant);
             }
 
             foreach ($imageVariant->getSteps() as $step) {
